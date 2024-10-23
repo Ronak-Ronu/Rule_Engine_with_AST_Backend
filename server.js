@@ -142,7 +142,9 @@ function evaluateOperand(condition, data) {
     return { result: reasons.length === 0, reasons };
 }
 
-
+app.get('/',(req,res)=>{
+    res.send("Endpoint: /evaluate")
+})
 app.post('/evaluate', (req, res) => {
     const { rules, data } = req.body;  // I get the rules and data from the request body
     const combinedRule = combine_rules(rules);  // Combining all rules into one AST
@@ -150,14 +152,29 @@ app.post('/evaluate', (req, res) => {
     res.json({ result: evaluationResult.result, reasons: evaluationResult.reasons });
 });
 
+// Keep-Alive Function to prevent worker node shutdown in onrender
+function sendRequest() {
+    axios.get('https://rule-engine-with-ast-backend-gm0y.onrender.com')
+        .then(response => {
+            console.log(`Keep-alive request successful with status: ${response.status}`);
+        })
+        .catch(error => {
+            console.error('Error in keep-alive request:', error.message);
+        });
+}
+
+function keepAlive() {
+    setInterval(sendRequest, 10 * 60 * 1000);  // Send request every 10 minutes
+}
 
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    keepAlive();
 });
 
 // Example rules and data
-const rule1 = "(age > 30 AND department = 'IT')";
+const rule1 = "(age < 30 AND department = 'IT')";
 const rule2 = "(age > 12)"; 
 const data = {
     age: 100,
